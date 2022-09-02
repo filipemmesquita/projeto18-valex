@@ -1,4 +1,4 @@
-import { connection } from "../database.js";
+import { connection } from "../database";
 
 export interface Company {
   id: number;
@@ -6,7 +6,7 @@ export interface Company {
   apiKey?: string;
 }
 
-export async function findByApiKey(apiKey: string) {
+export async function findByApiKey(apiKey: any) {
   const result = await connection.query<Company, [string]>(
     `SELECT * FROM companies WHERE "apiKey"=$1`,
     [apiKey]
