@@ -3,25 +3,32 @@ import * as employeeRepository from '../repositories/employeeRepository';
 import * as cardRepository from '../repositories/cardRepository'
 import { Company } from '../repositories/companyRepository';
 import { Employee } from '../repositories/employeeRepository';
-import { CardInsertData } from '../repositories/cardRepository';
 import { faker } from '@faker-js/faker';
 import dayjs from 'dayjs';
 import Cryptr from 'cryptr';
 import { config } from 'dotenv';
-//import bcrypt from 'bcrypt';
+import bcrypt from 'bcrypt';
 
 
 config();
 const cryptr= new Cryptr(process.env.CRYPTRKEY||'pato')
 
-export async function registerNewCard(apiKey:any,body:any):Promise<string>{
+export async function registerNewCard(
+    apiKey:any,
+    body:{employeeId:number,isVirtual:boolean,type:cardRepository.TransactionTypes})
+    :Promise<{code:number,message:string}>{
+
     const company:(Company|undefined) = await companyRepository.findByApiKey(apiKey)
     if(!company){
-        return "404 company not found";
+        return {code:404,message:"Company not found"};
     }
     const employee:(Employee|undefined)=await  employeeRepository.findById(body.employeeId);
     if(!employee){
-        return "404 employee not found";
+        return {code:404,message:"Employee not found"};
+    }
+    const cardAlreadyExists:(cardRepository.Card|undefined)=await cardRepository.findByTypeAndEmployeeId(body.type,body.employeeId);
+    if(cardAlreadyExists){
+        return {code:409,message:"Employee already has a card of this type"};
     }
     const cardNumber= faker.finance.creditCardNumber();
     let nameArray=employee.fullName.split(" ");
@@ -35,21 +42,63 @@ export async function registerNewCard(apiKey:any,body:any):Promise<string>{
     cardName+=" "+nameArray.slice(-1);
     cardName=cardName.toUpperCase();
     const expirationDate=dayjs().add(5,'year').format('MM/YY');
-    
-    const cvc = cryptr.encrypt(faker.finance.creditCardCVV());
-    //const hashedPassword = bcrypt.hashSync(body.password,10);
-    const newCard:CardInsertData = {
+    const cvc =faker.finance.creditCardCVV()
+    console.log(cvc)
+    const encryptedcvc = cryptr.encrypt(cvc);
+
+    const newCard:cardRepository.CardInsertData = {
         employeeId:body.employeeId,
         number:cardNumber,
         cardholderName:cardName,
-        securityCode:cvc,
+        securityCode:encryptedcvc,
         expirationDate:expirationDate,
         isVirtual:body.isVirtual,
         isBlocked:false,
         type:body.type
     }
     await cardRepository.insert(newCard);
-    return "201 Created";
+    return {code:201,message:"Created"};
+}
 
+export async function activateCard(
+    body:{
+        cardholderName:string,
+        cardNumber:string,
+        expirationDate:string,
+        cvc:string,
+        password:string
+    }):Promise<{code:number,message:string}>{    
+    const card:(cardRepository.Card|undefined)=await cardRepository.findByCardDetails(body.cardNumber,body.cardholderName,body.expirationDate);
+    if(!card){
+        return {code:401,message:"Some or all of card information is invalid"}
+    }
+    const decriptedCvc=cryptr.decrypt(card.securityCode)
+    if(body.cvc!==decriptedCvc){
+        return {code:401,message:"Invalid security code"}
+    }
+    if(await checkActivation(card)){
+        return {code:409,message:"Card is already active"}
+    }
+    if(await checkIfExpired(card)){
+        return {code:409,message:"Card already expired"}
+    }
+    const hashedPassword = bcrypt.hashSync(body.password,10);
+
+    await cardRepository.update(card.id,{password:hashedPassword})
+    return {code:200,message:"Card activated"}
+
+}
+
+export async function checkActivation(card:cardRepository.Card){
+    if(card.password){
+        return true;
+    }
+    return false;
+}
+export async function checkIfExpired(card:cardRepository.Card){
+    if(dayjs().isAfter(dayjs(card.expirationDate,"MM-YY"))){
+    return false;
+    }
+    return true;
 
 }

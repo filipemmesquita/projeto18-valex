@@ -12,8 +12,6 @@ function validateSchema(schema:any) {
             let messages = validate.error.details.map((value:any) => value.message);
             return res.status(422).send(messages.join('\n'));
         }
-
-        res.locals.body = body;
         next();
     };
 }
