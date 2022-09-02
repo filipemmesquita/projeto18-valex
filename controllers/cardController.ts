@@ -15,3 +15,7 @@ export async function blockCard(req:Request,res:Response){
     const result=await cardServices.blockCard(req.body)
     return res.status(result.code).send(result.message)
 }
+export async function unblockCard(req:Request,res:Response){
+    const result=await cardServices.unblockCard(req.body)
+    return res.status(result.code).send(result.message)
+}
