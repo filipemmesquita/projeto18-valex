@@ -8,7 +8,7 @@ import { faker } from '@faker-js/faker';
 import dayjs from 'dayjs';
 import Cryptr from 'cryptr';
 import { config } from 'dotenv';
-import bcrypt from 'bcrypt';
+//import bcrypt from 'bcrypt';
 
 
 config();
@@ -37,14 +37,13 @@ export async function registerNewCard(apiKey:any,body:any):Promise<string>{
     const expirationDate=dayjs().add(5,'year').format('MM/YY');
     
     const cvc = cryptr.encrypt(faker.finance.creditCardCVV());
-    const hashedPassword = bcrypt.hashSync(body.password,10);
+    //const hashedPassword = bcrypt.hashSync(body.password,10);
     const newCard:CardInsertData = {
         employeeId:body.employeeId,
         number:cardNumber,
         cardholderName:cardName,
         securityCode:cvc,
         expirationDate:expirationDate,
-        password:hashedPassword,
         isVirtual:body.isVirtual,
         isBlocked:false,
         type:body.type
