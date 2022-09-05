@@ -62,13 +62,11 @@ export async function registerNewCard(
 
 export async function activateCard(
     body:{
-        cardholderName:string,
-        cardNumber:string,
-        expirationDate:string,
+        cardId:number,
         cvc:string,
         password:string
     }):Promise<{code:number,message:string}>{    
-    const card:(cardRepository.Card|undefined)=await cardRepository.findByCardDetails(body.cardNumber,body.cardholderName,body.expirationDate);
+    const card:(cardRepository.Card|undefined)=await cardRepository.findById(body.cardId);
     if(!card){
         return {code:401,message:"Some or all of card information is invalid"}
     }
@@ -80,7 +78,7 @@ export async function activateCard(
         return {code:409,message:"Card is already active"}
     }
     if(await checkIfExpired(card)){
-        return {code:409,message:"Card already expired"}
+        return {code:401,message:"Card already expired"}
     }
     const hashedPassword = bcrypt.hashSync(body.password,10);
 
@@ -90,12 +88,10 @@ export async function activateCard(
 }
 export async function blockCard(
     body:{
-        cardholderName:string,
-        cardNumber:string,
-        expirationDate:string,
+        cardId:number,
         password:string
     }):Promise<{code:number,message:string}>{
-    const card:(cardRepository.Card)=await cardRepository.findByCardDetails(body.cardNumber,body.cardholderName,body.expirationDate);
+    const card:(cardRepository.Card)=await cardRepository.findById(body.cardId);
     const comparePassword = bcrypt.compareSync(body.password,card.password||"undefined")
     if(!card||!comparePassword){
         return {code:401,message:"Some or all of card information is invalid"}
@@ -113,18 +109,16 @@ export async function blockCard(
 
 export async function unblockCard(
     body:{
-        cardholderName:string,
-        cardNumber:string,
-        expirationDate:string,
+        cardId:number,
         password:string
     }):Promise<{code:number,message:string}>{
-    const card:(cardRepository.Card)=await cardRepository.findByCardDetails(body.cardNumber,body.cardholderName,body.expirationDate);
+    const card:(cardRepository.Card)=await cardRepository.findById(body.cardId);
     const comparePassword = bcrypt.compareSync(body.password,card.password||"undefined")
     if(!card||!comparePassword){
         return {code:401,message:"Some or all of card information is invalid"}
     }
     if(await checkIfExpired(card)){
-        return {code:409,message:"Card already expired"}
+        return {code:401,message:"Card already expired"}
     }
     if(!card.isBlocked){
         return {code:409,message:"Card not blocked"}
