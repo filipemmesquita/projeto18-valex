@@ -64,10 +64,12 @@ export async function checkBalance(cardId:number):Promise<{balance:number,transa
     let totalRecharged=0;
     recharges.forEach((entry)=>{
         totalRecharged+=entry.amount
+        entry.timestamp=dayjs(entry.timestamp).format('DD/MM/YYYY')
     })
     let totalPayed=0;
     payments.forEach((entry)=>{
         totalPayed+=entry.amount
+        entry.timestamp=dayjs(entry.timestamp).format('DD/MM/YYYY')
     })
 
     const balance=totalRecharged-totalPayed

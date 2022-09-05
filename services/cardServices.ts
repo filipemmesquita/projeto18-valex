@@ -58,7 +58,7 @@ export async function registerNewCard(
         type:body.type
     }
     await cardRepository.insert(newCard);
-    return {code:201,message:"Created"};
+    return {code:201,message:"Created with CVC "+cvc};
 }
 export async function activateCard(
     body:{
