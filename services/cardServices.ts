@@ -1,6 +1,7 @@
 import * as companyRepository from '../repositories/companyRepository';
 import * as employeeRepository from '../repositories/employeeRepository';
 import * as cardRepository from '../repositories/cardRepository'
+import * as transactionServices from '../services/transactionServices'
 import { Company } from '../repositories/companyRepository';
 import { Employee } from '../repositories/employeeRepository';
 import { faker } from '@faker-js/faker';
@@ -59,7 +60,6 @@ export async function registerNewCard(
     await cardRepository.insert(newCard);
     return {code:201,message:"Created"};
 }
-
 export async function activateCard(
     body:{
         cardId:number,
@@ -93,8 +93,11 @@ export async function blockCard(
     }):Promise<{code:number,message:string}>{
     const card:(cardRepository.Card)=await cardRepository.findById(body.cardId);
     const comparePassword = bcrypt.compareSync(body.password,card.password||"undefined")
-    if(!card||!comparePassword){
-        return {code:401,message:"Some or all of card information is invalid"}
+    if(!card){
+        return {code:404,message:"Card not found"}
+    }
+    if(!comparePassword){
+        return {code:401,message:"Invalid password"}
     }
     if(await checkIfExpired(card)){
         return {code:409,message:"Card already expired"}
@@ -106,7 +109,6 @@ export async function blockCard(
 
     return {code:200,message:"Card blocked"}
 }
-
 export async function unblockCard(
     body:{
         cardId:number,
@@ -129,6 +131,13 @@ export async function unblockCard(
     await cardRepository.update(card.id,{isBlocked:false})
 
     return {code:200,message:"Card unblocked"}
+}
+export async function viewBalance(body:{cardId:number}){
+    const card:(cardRepository.Card)=await cardRepository.findById(body.cardId);
+    if(!card){
+        return {code:404,message:"Card not found"}
+    }
+    return await transactionServices.checkBalance(body.cardId)
 }
 
 export async function checkActivation(card:cardRepository.Card){

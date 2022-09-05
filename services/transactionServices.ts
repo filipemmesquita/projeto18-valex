@@ -6,6 +6,7 @@ import { Card } from '../repositories/cardRepository'
 import { checkActivation, checkIfExpired } from './cardServices'
 import { number } from 'joi'
 import bcrypt from 'bcrypt'
+import dayjs from 'dayjs'
 
 export async function recharge(body:{cardId:number,amount:number})
 :Promise<{code:number,message:string}>{
@@ -68,6 +69,7 @@ export async function checkBalance(cardId:number):Promise<{balance:number,transa
     payments.forEach((entry)=>{
         totalPayed+=entry.amount
     })
+
     const balance=totalRecharged-totalPayed
     return {balance,transactions:payments,recharges}
 }

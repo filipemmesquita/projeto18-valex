@@ -19,3 +19,7 @@ export async function unblockCard(req:Request,res:Response){
     const result=await cardServices.unblockCard(req.body)
     return res.status(result.code).send(result.message)
 }
+export async function displayBalance(req:Request,res:Response){
+    const result=await cardServices.viewBalance(req.body)
+    return res.status(200).send(result);
+}
