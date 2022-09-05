@@ -114,8 +114,11 @@ export async function unblockCard(
     }):Promise<{code:number,message:string}>{
     const card:(cardRepository.Card)=await cardRepository.findById(body.cardId);
     const comparePassword = bcrypt.compareSync(body.password,card.password||"undefined")
-    if(!card||!comparePassword){
-        return {code:401,message:"Some or all of card information is invalid"}
+    if(!card){
+        return {code:404,message:"Card not found"}
+    }
+    if(!comparePassword){
+        return {code:401,message:"Invalid password"}
     }
     if(await checkIfExpired(card)){
         return {code:401,message:"Card already expired"}
